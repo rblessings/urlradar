@@ -1,0 +1,67 @@
+services:
+
+  elasticsearch:
+    image: 'docker.elastic.co/elasticsearch/elasticsearch:8.17.0'
+    environment:
+      - 'ELASTIC_PASSWORD=secret'
+      - 'discovery.type=single-node'
+      - 'xpack.security.enabled=false'
+    ports:
+      - '9200:9200'
+      - '9300:9300'
+
+  mongodb:
+    image: 'mongo:latest'
+    environment:
+      - 'MONGO_INITDB_DATABASE=urlradar'
+      - 'MONGO_INITDB_ROOT_USERNAME=root'
+      - 'MONGO_INITDB_ROOT_PASSWORD=secret'
+    ports:
+      - '27017:27017'
+
+  redis:
+    image: 'redis:latest'
+    ports:
+      - '6379:6379'
+
+  kafka:
+    image: apache/kafka:3.9.0
+    ports:
+      - "9092:9092"
+    environment:
+      # KRaft mode configuration
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_NODE_ID: "1" # Unique node ID for this Kafka broker
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093" # Quorum voters for KRaft
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+
+      # Topic auto-creation settings
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+      # Internal topics configuration
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+
+      # Log directory and cluster ID
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+      KAFKA_CLUSTER_ID: "urlradar-27-12-2024"
+
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - kafka_network
+
+volumes:
+  kafka_data:
+    driver: local
+
+networks:
+  kafka_network:
+    driver: bridge
+
+
