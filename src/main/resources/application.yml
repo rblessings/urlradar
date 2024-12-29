@@ -1,3 +1,7 @@
 spring:
   application:
     name: urlradar
+
+logging:
+  level:
+    org.springframework.security: debug
