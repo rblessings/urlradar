@@ -1,3 +1,4 @@
 logging:
   level:
-    org.springframework.security: debug
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG

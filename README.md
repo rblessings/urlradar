@@ -106,7 +106,12 @@ To run the project locally using Docker:
     cd urlradar
     ```
 
-2. Build and run the Docker containers:
+2. Run the **unit and integration tests** by executing the following command:
+    ```bash
+   ./gradlew clean build
+   ```
+
+3. Build and run the Docker containers:
     ```bash
     docker compose up --build -d
     ```
@@ -118,7 +123,7 @@ To run the project locally using Docker:
     - **Elasticsearch**: Provides real-time analytics for user data and URL performance.
 
 
-3. To start the **Backend (API)** Core URL redirection and analytics service:
+4. To start the **Backend (API)** Core URL redirection and analytics service:
     ```bash
    SPRING_PROFILES_ACTIVE=dev ./gradlew clean bootRun
    ```
@@ -179,17 +184,28 @@ To obtain a JWT token using the OAuth2 client credentials flow:
 
    This command will return a JSON response containing the access token if the credentials are valid.
 
-### Example Output
+#### Example Output
 
 If the request is successful, the response will contain an access token in the JSON format:
 
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbGllZW50IiwiY2xpZW50X2lkIjoiY2xpZW50Iiwic2NvcGUiOiJvcGVuaWQiLCJleHBpcmVkX2luIjoxMjM0NTY3ODkwfQ.XYcXTW7yHRlWbYv8E1PpQuS9r6ZoOeF7QF8cOMcKIEk",
+  "access_token": "<jwt-token>",
   "token_type": "Bearer",
   "expires_in": 299,
-  "scope": "openid"
+  "scope": "apis"
 }
+```
+
+#### Request the Protected Resource Using a JWT Token
+
+After obtaining the JWT token, you can use it to access a protected resource, such as an API endpoint. To do this, send
+an HTTP `GET` request to the desired endpoint, passing the token as a Bearer token in the `Authorization` header.
+
+#### Example `curl` Command:
+
+```bash
+curl -v http://localhost:8080/api/v1/hello -H "Authorization: Bearer <your-jwt-token>"
 ```
 
 ---

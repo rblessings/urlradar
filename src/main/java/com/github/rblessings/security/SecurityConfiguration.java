@@ -13,7 +13,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -30,6 +29,7 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
+import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
@@ -47,6 +47,7 @@ import java.util.UUID;
  * This class configures the OAuth2 authorization server, providing secure token issuance and validation
  * using JWT. The current implementation leverages the Client Credentials Grant Type for secure
  * machine-to-machine communication, and is designed to be simple and easily extendable.
+ * </p>
  *
  * <p><strong>Current Implementation:</strong></p>
  * <ul>
@@ -57,7 +58,7 @@ import java.util.UUID;
  *     <li><strong>In-Memory Key Pair</strong>: RSA keys are generated in memory for signing JWT tokens.</li>
  * </ul>
  *
- * <p><strong>Future Enhancements (TODO):</strong></p>
+ * <p><strong>Future Enhancements:</strong></p>
  * <ol>
  *     <li><strong>Transition to Authorization Code Grant</strong>: Once the front-end/UI microservice is developed,
  *         we will migrate to the <code>Authorization Code Grant Type</code> for user-based authentication and consent flows.</li>
@@ -72,6 +73,14 @@ import java.util.UUID;
  * </ol>
  *
  * <p>These enhancements will ensure that the system scales securely as we move from development to production.</p>
+ *
+ * <p><strong>Considerations:</strong></p>
+ * <ol>
+ *     <li><strong>To ensure scalability</strong>, it may be necessary to decouple the authorization server and implement it as a separate service.</li>
+ *     <li>While we have implemented a custom authorization server, <strong>alternative solutions</strong> such as Keycloak or Okta could also
+ *          be considered, particularly in scenarios where scalability, faster time-to-market, and reduced maintenance overhead are key priorities.
+ *     </li>
+ * </ol>
  */
 @Configuration
 @EnableWebSecurity
@@ -92,23 +101,23 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests((authorize) ->
                         authorize
                                 .anyRequest().authenticated()
-                )
-                .exceptionHandling((exceptions) -> exceptions
-                        .defaultAuthenticationEntryPointFor(
-                                new BearerTokenAuthenticationEntryPoint(),
-                                new MediaTypeRequestMatcher(MediaType.APPLICATION_FORM_URLENCODED)
-                        )
                 );
         return http.build();
     }
 
     @Bean
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests((authorize) -> authorize
                         .anyRequest().authenticated()
                 )
-                .httpBasic(AbstractHttpConfigurer::disable);
+                .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()))
+                .exceptionHandling((exceptions) -> exceptions
+                        .defaultAuthenticationEntryPointFor(
+                                new BearerTokenAuthenticationEntryPoint(),
+                                new MediaTypeRequestMatcher(MediaType.APPLICATION_JSON, MediaType.APPLICATION_FORM_URLENCODED)
+                        )
+                        .accessDeniedHandler(new BearerTokenAccessDeniedHandler()));
         return http.build();
     }
 
@@ -129,7 +138,6 @@ public class SecurityConfiguration {
                 .clientSecret("{noop}secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .scope("apis")
                 .tokenSettings(TokenSettings.builder().accessTokenTimeToLive(Duration.ofMinutes(10)).build())
                 .build();
