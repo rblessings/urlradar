@@ -41,7 +41,7 @@ class SecurityConfigurationTest {
                 .uri(tokenEndpoint)
                 .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
                 .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedCredentials)
-                .bodyValue("grant_type=client_credentials&scope=openid")
+                .bodyValue("grant_type=client_credentials&scope=apis")
                 .exchange()
                 .expectStatus().isOk()  // HTTP 200 OK
                 .expectBody()
@@ -83,7 +83,7 @@ class SecurityConfigurationTest {
     // Utility method to assert the structure of the JWT token response
     private void assertTokenResponse(String responseBody) {
         assertThat(responseBody).contains("\"access_token\":\"");
-        assertThat(responseBody).contains("\"scope\":\"openid\"");
+        assertThat(responseBody).contains("\"scope\":\"apis\"");
         assertThat(responseBody).contains("\"token_type\":\"Bearer\"");
         assertThat(responseBody).contains("\"expires_in\":");
 

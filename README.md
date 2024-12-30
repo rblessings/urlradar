@@ -120,7 +120,7 @@ To run the project locally using Docker:
 
 3. To start the **Backend (API)** Core URL redirection and analytics service:
     ```bash
-   ./gradlew clean bootRun
+   SPRING_PROFILES_ACTIVE=dev ./gradlew clean bootRun
    ```
 
    **Note:** This command automatically runs the `compose.yaml` file to start the Backend (API) service and its
@@ -131,6 +131,14 @@ To run the project locally using Docker:
 ## Usage
 
 ### API Usage
+
+#### Fetch OpenID Configuration
+
+- The following `curl` command is used to retrieve the OpenID configuration from the authorization server:
+
+    ```bash
+    curl http://localhost:8080/.well-known/openid-configuration
+    ```
 
 #### OAuth2 Client Credentials Flow: JWT Token Request
 
@@ -160,14 +168,14 @@ To obtain a JWT token using the OAuth2 client credentials flow:
     --header 'Authorization: Basic Y2xpZW50OnNlY3JldA==' \
     --header 'Content-Type: application/x-www-form-urlencoded' \
     --data-urlencode 'grant_type=client_credentials' \
-    --data-urlencode 'scope=openid'
+    --data-urlencode 'scope=apis'
     ```
 
    **Explanation**:
     - `Authorization: Basic Y2xpZW50OnNlY3JldA==`: The base64-encoded client credentials (`client:secret`).
     - `Content-Type: application/x-www-form-urlencoded`: Specifies the content type of the request.
     - `grant_type=client_credentials`: The grant type used for this request.
-    - `scope=openid`: Defines the scope for the token.
+    - `scope=apis`: Defines the scope for the token.
 
    This command will return a JSON response containing the access token if the credentials are valid.
 
