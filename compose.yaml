@@ -58,10 +58,8 @@ services:
 
 volumes:
   kafka_data:
-    driver: local
 
 networks:
   kafka_network:
-    driver: bridge
 
 

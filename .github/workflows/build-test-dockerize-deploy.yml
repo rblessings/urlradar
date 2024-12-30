@@ -34,7 +34,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build and test the application with Gradle
-        run: ./gradlew build  # This will build and run tests in one command
+        run: ./gradlew clean build  # This will build and run tests in one command
 
   # Job to build the Docker image using Spring Boot Buildpacks and push it to Docker Hub
   dockerize_and_deploy_image:

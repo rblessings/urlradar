@@ -17,6 +17,8 @@ urlradar simplifies link management for job seekers, entrepreneurs, and anyone w
 
 [![Build, Test, Dockerize, and Deploy to Docker Hub](https://github.com/rblessings/urlradar/actions/workflows/build-test-dockerize-deploy.yml/badge.svg)](https://github.com/rblessings/urlradar/actions/workflows/build-test-dockerize-deploy.yml)
 
+---
+
 ## Table of Contents
 
 - [Features](#features)
@@ -101,19 +103,33 @@ To run the project locally using Docker:
 1. Clone the repository:
     ```bash
     git clone https://github.com/rblessings/urlradar.git
+    cd urlradar
     ```
 
-2. Build and run the Docker containers:
+2. Run the **unit and integration tests** by executing the following command:
+    ```bash
+   ./gradlew clean build
+   ```
+
+3. Build and run the Docker containers:
     ```bash
     docker compose up --build -d
     ```
 
    This will start the following services:
-    - **Backend (API)**: Core URL redirection service.
     - **MongoDB**: Stores user data and redirection records.
     - **Redis**: Caching layer for efficient URL lookups.
     - **Kafka**: Manages event streaming for distributed communication.
     - **Elasticsearch**: Provides real-time analytics for user data and URL performance.
+
+
+4. To start the **Backend (API)** Core URL redirection and analytics service:
+    ```bash
+   SPRING_PROFILES_ACTIVE=dev ./gradlew clean bootRun
+   ```
+
+   **Note:** This command automatically runs the `compose.yaml` file to start the Backend (API) service and its
+   dependencies, offering an alternative to `docker compose up --build -d`.
 
 ---
 
@@ -121,7 +137,76 @@ To run the project locally using Docker:
 
 ### API Usage
 
-_Coming soon..._
+#### Fetch OpenID Configuration
+
+- The following `curl` command is used to retrieve the OpenID configuration from the authorization server:
+
+    ```bash
+    curl http://localhost:8080/.well-known/openid-configuration
+    ```
+
+#### OAuth2 Client Credentials Flow: JWT Token Request
+
+To obtain a JWT token using the OAuth2 client credentials flow:
+
+1. **Base64 Encode Client Credentials**
+
+   First, base64 encode your client credentials (`client:secret`) to generate the `Authorization` header:
+
+    ```bash
+    echo -n "client:secret" | base64
+    ```
+
+   This will output the base64-encoded string:
+
+    ```
+    Y2xpZW50OnNlY3JldA==
+    ```
+
+2. **Request the JWT Token**
+
+   Once you have the base64-encoded credentials, use the following `curl` command to request a JWT token from the OAuth2
+   server:
+
+    ```bash
+    curl -X POST 'http://localhost:8080/oauth2/token' \
+    --header 'Authorization: Basic Y2xpZW50OnNlY3JldA==' \
+    --header 'Content-Type: application/x-www-form-urlencoded' \
+    --data-urlencode 'grant_type=client_credentials' \
+    --data-urlencode 'scope=apis'
+    ```
+
+   **Explanation**:
+    - `Authorization: Basic Y2xpZW50OnNlY3JldA==`: The base64-encoded client credentials (`client:secret`).
+    - `Content-Type: application/x-www-form-urlencoded`: Specifies the content type of the request.
+    - `grant_type=client_credentials`: The grant type used for this request.
+    - `scope=apis`: Defines the scope for the token.
+
+   This command will return a JSON response containing the access token if the credentials are valid.
+
+#### Example Output
+
+If the request is successful, the response will contain an access token in the JSON format:
+
+```json
+{
+  "access_token": "<jwt-token>",
+  "token_type": "Bearer",
+  "expires_in": 299,
+  "scope": "apis"
+}
+```
+
+#### Request the Protected Resource Using a JWT Token
+
+After obtaining the JWT token, you can use it to access a protected resource, such as an API endpoint. To do this, send
+an HTTP `GET` request to the desired endpoint, passing the token as a Bearer token in the `Authorization` header.
+
+#### Example `curl` Command:
+
+```bash
+curl -v http://localhost:8080/api/v1/hello -H "Authorization: Bearer <your-jwt-token>"
+```
 
 ---
 
