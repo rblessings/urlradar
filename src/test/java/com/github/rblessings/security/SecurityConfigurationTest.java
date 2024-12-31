@@ -28,9 +28,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(SecurityConfigurationTest.TestApiController.class)
 class SecurityConfigurationTest {
-
     private static final String TOKEN_ENDPOINT = "/oauth2/token";
     private static final String HELLO_ENDPOINT = "/api/v1/hello";
+    private static final String PRINCIPAL_ENDPOINT = "/api/v1/principal";
     private static final String CLIENT_ID = "client";
     private static final String CLIENT_SECRET = "secret";
 
@@ -120,6 +120,40 @@ class SecurityConfigurationTest {
                 .value("WWW-Authenticate", message ->
                         assertThat(message).contains("Bearer error=\"invalid_token\"")
                 );
+    }
+
+    @Test
+    void shouldReturnPrincipalForValidToken() {
+        // Given: Get a valid access token using OAuth2 client credentials
+        String token = getValidAccessToken();
+
+        // When: Request the /api/v1/principal endpoint with the valid Bearer token
+        webTestClient.get()
+                .uri(PRINCIPAL_ENDPOINT)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class)
+                .value(response -> {
+                    // Then: Assert the response body contains the expected claims (e.g., permissions)
+                    // Check if permissions are present in the response
+                    assertThat(response).contains("\"permissions\":[\"read_apis\",\"write_apis\"]");
+
+                    // Check if the "authenticated" status is true
+                    assertThat(response).contains("\"authenticated\":true");
+
+                    // Optional: Assert specific values in the response (e.g., authorities, principal name)
+                    assertThat(response).contains("\"authorities\":[{\"authority\":\"read\"}]");
+
+                    // Optional: Assert the principal's name is as expected
+                    assertThat(response).contains("\"name\":\"client\"");
+
+                    // Optional: Since some values like tokenValue, issuedAt, and expiresAt change frequently,
+                    // avoid asserting on those exact values. Instead, check for patterns:
+                    assertThat(response).containsPattern("\"tokenValue\":\"[^\"]+\""); // Token value format
+                    assertThat(response).containsPattern("\"issuedAt\":\"[^\"]+\""); // Issued timestamp format
+                    assertThat(response).containsPattern("\"expiresAt\":\"[^\"]+\""); // Expiration timestamp format
+                });
     }
 
     private static String getResponseBodyContent(EntityExchangeResult<byte[]> response) {
