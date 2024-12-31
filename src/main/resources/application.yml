@@ -1,3 +1,13 @@
 spring:
+
   application:
     name: urlradar
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health  # Expose only health endpoint
+    endpoint:
+      health:
+        show-details: always   # Show detailed health information (optional)
