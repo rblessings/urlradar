@@ -1,5 +1,7 @@
 # urlradar - Secure & Seamless URL Redirection Service
 
+**For a detailed understanding of the project's direction and planned features, please refer to the open issues.**
+
 ## Overview
 
 **Secure and Up-to-Date Links for Professionals**
@@ -205,7 +207,7 @@ an HTTP `GET` request to the desired endpoint, passing the token as a Bearer tok
 #### Example `curl` Command:
 
 ```bash
-curl -v http://localhost:8080/api/v1/hello -H "Authorization: Bearer <your-jwt-token>"
+curl -v http://localhost:8080/api/v1/principal -H "Authorization: Bearer <your-jwt-token>"
 ```
 
 ---
