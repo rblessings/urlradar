@@ -1,6 +1,9 @@
 # urlradar - Secure & Seamless URL Redirection Service
 
+---
 **For a detailed understanding of the project's direction and planned features, please refer to the open issues.**
+
+---
 
 ## Overview
 
