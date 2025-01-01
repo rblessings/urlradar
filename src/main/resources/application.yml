@@ -14,14 +14,14 @@ spring:
 
   data:
     mongodb:
-      uri:
+      uri: # This should be overridden based on the specific environment configuration.
 
     redis:
-      host:
+      host:  # This should be overridden based on the specific environment configuration.
 
   elasticsearch:
-    uris:
+    uris:  # This should be overridden based on the specific environment configuration.
 
   kafka:
-    bootstrap-servers:
+    bootstrap-servers:  # This should be overridden based on the specific environment configuration.
 
