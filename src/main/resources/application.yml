@@ -11,3 +11,17 @@ spring:
     endpoint:
       health:
         show-details: always   # Show detailed health information (optional)
+
+  data:
+    mongodb:
+      uri:
+
+    redis:
+      host:
+
+  elasticsearch:
+    uris:
+
+  kafka:
+    bootstrap-servers:
+
