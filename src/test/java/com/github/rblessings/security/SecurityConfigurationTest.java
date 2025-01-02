@@ -50,10 +50,10 @@ class SecurityConfigurationTest {
 
     @Test
     void shouldGenerateJwtTokenForValidClientCredentials() {
-        // Given valid client credentials
+        // Given: Valid client credentials
         String encodedCredentials = encodeClientCredentials(CLIENT_ID, CLIENT_SECRET);
 
-        // When requesting the token
+        // When: Requesting the token with valid credentials
         webTestClient.post()
                 .uri(TOKEN_ENDPOINT)
                 .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
@@ -64,18 +64,18 @@ class SecurityConfigurationTest {
                 .expectBody()
                 .consumeWith(response -> {
                     String responseBody = getResponseBodyContent(response);
-                    // Validate token response structure
+                    // Then: Assert the response body contains a valid token
                     assertTokenResponse(responseBody);
                 });
     }
 
     @Test
     void shouldReturnUnauthorizedForInvalidClientCredentials() {
-        // Given invalid client credentials
+        // Given: Invalid client credentials
         String invalidClientId = "invalidClient";
         String invalidClientSecret = "invalidSecret";
 
-        // When requesting the token with invalid credentials
+        // When: Requesting the token with invalid credentials
         webTestClient.post()
                 .uri(TOKEN_ENDPOINT)
                 .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
@@ -84,6 +84,7 @@ class SecurityConfigurationTest {
                 .expectStatus().isUnauthorized()
                 .expectBody()
                 .consumeWith(response -> {
+                    // Then: should not be able to retrieve a token
                     String responseBody = getResponseBodyContent(response);
                     assertThat(responseBody).contains("invalid_client");
                 });
@@ -214,7 +215,11 @@ class SecurityConfigurationTest {
         return accessToken.get();
     }
 
-    // Endpoint to test the OAuth 2 resource server configuration
+    /**
+     * A test controller used to verify the OAuth 2 Resource Server configuration.
+     * This controller exposes a simple endpoint that can be accessed by clients
+     * with valid access tokens.
+     */
     @RestController
     @RequestMapping(value = "/api/v1/hello")
     static class TestApiController {

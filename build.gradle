@@ -33,6 +33,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.apache.kafka:kafka-streams'
     implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.session:spring-session-data-redis'
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
