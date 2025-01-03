@@ -12,8 +12,5 @@ spring:
     redis:
       host: localhost
 
-  elasticsearch:
-    uris: http://localhost:9200
-
   kafka:
     bootstrap-servers: localhost:9092
