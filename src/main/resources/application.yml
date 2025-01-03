@@ -10,7 +10,7 @@ spring:
           include: health  # Expose only health endpoint
     endpoint:
       health:
-        show-details: always   # Show detailed health information (optional)
+        show-details: always   # Show detailed health information
 
   data:
     mongodb:
@@ -18,9 +18,6 @@ spring:
 
     redis:
       host:  # This should be overridden based on the specific environment configuration.
-
-  elasticsearch:
-    uris:  # This should be overridden based on the specific environment configuration.
 
   kafka:
     bootstrap-servers:  # This should be overridden based on the specific environment configuration.

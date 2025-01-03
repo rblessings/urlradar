@@ -68,8 +68,9 @@ urlradar simplifies link management for job seekers, entrepreneurs, and anyone w
 - **Distributed System**:
     - **Kafka**: Enables high-throughput, real-time data streaming for user analytics (click counts, geography,
       referrals) and facilitates decoupled microservice communication.
-    - **MongoDB**: NoSQL database for storing redirection data, analytics, and user profiles.
-    - **Elasticsearch**: Enables efficient full-text search and indexing of URLs for fast lookups and analytics.
+    - **MongoDB**: The system utilizes a NoSQL database to manage redirection data, analytics, and user profiles. This
+      architecture supports efficient full-text search and indexing of URLs, ensuring rapid lookups and high-performance
+      analytics.
 
 - **Caching**:
     - **Redis**: Leverages Redis to cache frequently accessed URL redirection and analytics data (click counts,
@@ -124,8 +125,8 @@ To run the project locally using Docker:
    This will start the following services:
     - **MongoDB**: Stores user data and redirection records.
     - **Redis**: Caching layer for efficient URL lookups.
-    - **Kafka**: Manages event streaming for distributed communication.
-    - **Elasticsearch**: Provides real-time analytics for user data and URL performance.
+    - **Kafka**: handles event streaming for distributed communication, enabling real-time analytics on user data and
+      URL performance with low-latency, high-throughput processing.
 
 
 4. To start the **Backend (API)** Core URL redirection and analytics service:
