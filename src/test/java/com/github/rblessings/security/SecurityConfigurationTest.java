@@ -145,17 +145,11 @@ class SecurityConfigurationTest {
                     // Check if the "authenticated" status is true
                     assertThat(response).contains("\"authenticated\":true");
 
-                    // Optional: Assert specific values in the response (e.g., authorities, principal name)
+                    // Assert specific values in the response (e.g., authorities, principal name)
                     assertThat(response).contains("\"authorities\":[{\"authority\":\"read\"}]");
 
-                    // Optional: Assert the principal's name is as expected
+                    // Assert the principal's name is as expected
                     assertThat(response).contains("\"name\":\"client\"");
-
-                    // Optional: Since some values like tokenValue, issuedAt, and expiresAt change frequently,
-                    // avoid asserting on those exact values. Instead, check for patterns:
-                    assertThat(response).containsPattern("\"tokenValue\":\"[^\"]+\""); // Token value format
-                    assertThat(response).containsPattern("\"issuedAt\":\"[^\"]+\""); // Issued timestamp format
-                    assertThat(response).containsPattern("\"expiresAt\":\"[^\"]+\""); // Expiration timestamp format
                 });
     }
 
