@@ -1,4 +1,4 @@
-# TODO: Implement Slack notification for failed builds to alert the team in case of pipeline failures.
+# TODO: Implement Slack notifications for failed builds to alert the team in the event of pipeline failures.
 
 name: Build, Test, Dockerize, and Deploy to Docker Hub
 
@@ -11,6 +11,7 @@ on:
       - main
 
 jobs:
+
   # Job to build and test the Spring Boot application using Gradle
   build_and_test_application:
     runs-on: ubuntu-latest

@@ -1,10 +1,12 @@
 services:
 
+  # Tested with v7.4.1; however, always pull the latest version to ensure you are using the most up-to-date releases.
   redis:
     image: 'redis:latest'
     ports:
       - '6379:6379'
 
+  # Tested with v8.0.4; however, always pull the latest version to ensure you are using the most up-to-date releases.
   mongodb:
     image: 'mongo:latest'
     environment:
@@ -14,8 +16,9 @@ services:
     ports:
       - '27017:27017'
 
+  # Tested with v3.9.0; however, always pull the latest version to ensure you are using the most up-to-date releases.
   kafka:
-    image: apache/kafka:3.9.0
+    image: 'apache/kafka:latest'
     ports:
       - "9092:9092"
     environment:
