@@ -3,22 +3,25 @@ spring:
   application:
     name: urlradar
 
-  management:
-    endpoints:
-      web:
-        exposure:
-          include: health  # Expose only health endpoint
-    endpoint:
-      health:
-        show-details: always   # Show detailed health information
-
   data:
     mongodb:
       uri: # This should be overridden based on the specific environment configuration.
 
     redis:
-      host:  # This should be overridden based on the specific environment configuration.
+      host: # This should be overridden based on the specific environment configuration.
 
   kafka:
-    bootstrap-servers:  # This should be overridden based on the specific environment configuration.
+    bootstrap-servers: # This should be overridden based on the specific environment configuration.
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true

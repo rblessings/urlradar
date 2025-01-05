@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(SecurityConfigurationTest.TestApiController.class)
 class SecurityConfigurationTest {
+
     private static final String TOKEN_ENDPOINT = "/oauth2/token";
     private static final String HELLO_ENDPOINT = "/api/v1/hello";
     private static final String PRINCIPAL_ENDPOINT = "/api/v1/principal";

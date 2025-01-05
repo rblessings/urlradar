@@ -100,6 +100,7 @@ Follow these steps to set up the **urlradar** project locally or deploy it to th
 Ensure the following tools are installed:
 
 - [Docker v27.4.1](https://www.docker.com/get-started): (or latest).
+- [Docker Compose v2.32.1](https://www.docker.com/get-started): (or latest).
 - [Java 23](https://docs.aws.amazon.com/corretto/latest/corretto-23-ug/downloads-list.html): (or latest).
 
 ### Local Setup with Docker
