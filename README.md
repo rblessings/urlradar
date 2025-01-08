@@ -168,6 +168,7 @@ To view the documentation:
 
 This will present an interactive documentation page where you can find detailed information on how to make requests to
 test the app's APIs.
+
 ---
 
 ## License
