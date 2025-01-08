@@ -4,13 +4,15 @@ import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.restdocs.RestDocumentationContextProvider;
+import org.springframework.restdocs.RestDocumentationExtension;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
@@ -24,29 +26,48 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.restdocs.operation.preprocess.Preprocessors.*;
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.documentationConfiguration;
 
 @ActiveProfiles({"dev"})
-@ExtendWith(SpringExtension.class)
+@ExtendWith({SpringExtension.class, RestDocumentationExtension.class})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(SecurityConfigurationTest.TestApiController.class)
 class SecurityConfigurationTest {
 
     private static final String TOKEN_ENDPOINT = "/oauth2/token";
     private static final String HELLO_ENDPOINT = "/api/v1/hello";
-    private static final String PRINCIPAL_ENDPOINT = "/api/v1/principal";
+    private static final String PRINCIPAL_ENDPOINT = "/api/v1/users/principal";
     private static final String CLIENT_ID = "client";
     private static final String CLIENT_SECRET = "secret";
 
-    private final WebTestClient webTestClient;
+    private WebTestClient webTestClient;
 
-    @Autowired
-    public SecurityConfigurationTest(WebTestClient webTestClient) {
-        this.webTestClient = webTestClient;
-    }
+    @LocalServerPort
+    private int port;
 
     @BeforeEach
-    void setUp() {
-        // Any setup required for each test
+    void setUp(RestDocumentationContextProvider restDocumentation) {
+        this.webTestClient = WebTestClient.bindToServer()
+                .baseUrl("http://localhost:%d".formatted(port))
+                .filter(documentationConfiguration(restDocumentation)
+                        .operationPreprocessors()
+                        .withRequestDefaults(
+                                modifyHeaders()
+                                        // Removing non-essential headers to streamline the request for documentation purposes
+                                        .remove("accept-encoding")
+                                        .remove("user-agent")
+                                        .remove("accept"),
+                                modifyUris()
+                                        // Ensuring consistent and fixed base URI for documentation, overriding dynamic test ports
+                                        .scheme("http")
+                                        .host("localhost")
+                                        .port(8080)  // Explicitly setting the port to 8080 for documentation clarity
+                        )
+                        .withResponseDefaults(prettyPrint()) // Pretty print for response bodies to improve readability
+                )
+                .build();
     }
 
     @Test
@@ -58,16 +79,17 @@ class SecurityConfigurationTest {
         webTestClient.post()
                 .uri(TOKEN_ENDPOINT)
                 .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
-                .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedCredentials)
+                .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedCredentials)  // Concatenate 'Basic' with encoded credentials
                 .bodyValue("grant_type=client_credentials&scope=apis")
                 .exchange()
-                .expectStatus().isOk()
+                .expectStatus().isOk()  // Check for HTTP status 200 (OK)
                 .expectBody()
                 .consumeWith(response -> {
                     String responseBody = getResponseBodyContent(response);
                     // Then: Assert the response body contains a valid token
                     assertTokenResponse(responseBody);
-                });
+                })
+                .consumeWith(document("users-generate-oauth2-jwt-token"));
     }
 
     @Test
@@ -151,7 +173,8 @@ class SecurityConfigurationTest {
 
                     // Assert the principal's name is as expected
                     assertThat(response).contains("\"name\":\"client\"");
-                });
+                })
+                .consumeWith(document("users-get-current-principal"));
     }
 
     private static String getResponseBodyContent(EntityExchangeResult<byte[]> response) {
@@ -225,4 +248,3 @@ class SecurityConfigurationTest {
         }
     }
 }
-

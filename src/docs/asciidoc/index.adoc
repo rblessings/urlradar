@@ -1,0 +1,31 @@
+= API Documentation
+
+== Authentication
+=== Generate OAuth2 JWT Token
+
+==== Request
+include::{snippetsDir}/users-generate-oauth2-jwt-token/curl-request.adoc[]
+
+==== Response
+include::{snippetsDir}/users-generate-oauth2-jwt-token/response-body.adoc[]
+
+== Users
+=== Retrieve Authenticated User Details
+
+include::{snippetsDir}/users-get-current-principal/curl-request.adoc[]
+
+=== Create User
+
+==== Request
+include::{snippetsDir}/users-create-account/curl-request.adoc[]
+
+==== Response
+include::{snippetsDir}/users-create-account/response-body.adoc[]
+
+=== Get User by ID
+
+==== Request
+include::{snippetsDir}/users-get-user-by-id/curl-request.adoc[]
+
+==== Response
+include::{snippetsDir}/users-get-user-by-id/response-body.adoc[]

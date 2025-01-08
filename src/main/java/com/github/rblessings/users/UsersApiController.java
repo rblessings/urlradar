@@ -3,6 +3,7 @@ package com.github.rblessings.users;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -44,5 +45,10 @@ public class UsersApiController {
                     return ResponseEntity.status(notFoundStatus).body(ApiResponse.error(notFoundStatus.value(),
                             "User with ID %s not found".formatted(id)));
                 });
+    }
+
+    @GetMapping("/principal")
+    public ResponseEntity<Authentication> getPrincipal(Authentication authentication) {
+        return ResponseEntity.ok(authentication);
     }
 }
