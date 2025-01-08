@@ -29,7 +29,7 @@ urlradar simplifies link management for job seekers, entrepreneurs, and anyone w
 - [Features](#features)
 - [Technical Features](#technical-features)
 - [Installation](#installation)
-- [Usage](#usage)
+- [API Usage](#api-usage)
 - [License](#license)
 
 ---
@@ -140,81 +140,34 @@ To run the project locally using Docker:
 
 ---
 
-## Usage
+## API Usage
 
-### API Usage
+As part of our development process, we utilize **Spring REST Docs** to generate accurate and up-to-date documentation
+for our REST APIs. This approach offers several key advantages:
 
-#### Fetch OpenID Configuration
+* **Test-driven Documentation**: By coupling documentation generation with automated tests, we ensure that the API
+  documentation is always aligned with the actual code, reducing discrepancies between what is documented and what is
+  implemented.
+* **Enforcing Test Coverage**: Writing tests to generate documentation enforces the creation of test cases for all API
+  endpoints, improving the overall quality and reliability of the codebase.
+* **Accurate and Up-to-Date**: Spring REST Docs ensures that the documentation is generated from real API interactions,
+  reflecting the actual request and response formats, headers, and payloads used in production.
 
-- The following `curl` command is used to retrieve the OpenID configuration from the authorization server:
-
-    ```bash
-    curl http://localhost:8080/.well-known/openid-configuration
-    ```
-
-#### OAuth2 Client Credentials Flow: JWT Token Request
-
-To obtain a JWT token using the OAuth2 client credentials flow:
-
-1. **Base64 Encode Client Credentials**
-
-   First, base64 encode your client credentials (`client:secret`) to generate the `Authorization` header:
-
-    ```bash
-    echo -n "client:secret" | base64
-    ```
-
-   This will output the base64-encoded string:
-
-    ```
-    Y2xpZW50OnNlY3JldA==
-    ```
-
-2. **Request the JWT Token**
-
-   Once you have the base64-encoded credentials, use the following `curl` command to request a JWT token from the OAuth2
-   server:
-
-    ```bash
-    curl -X POST 'http://localhost:8080/oauth2/token' \
-    --header 'Authorization: Basic Y2xpZW50OnNlY3JldA==' \
-    --header 'Content-Type: application/x-www-form-urlencoded' \
-    --data-urlencode 'grant_type=client_credentials' \
-    --data-urlencode 'scope=apis'
-    ```
-
-   **Explanation**:
-    - `Authorization: Basic Y2xpZW50OnNlY3JldA==`: The base64-encoded client credentials (`client:secret`).
-    - `Content-Type: application/x-www-form-urlencoded`: Specifies the content type of the request.
-    - `grant_type=client_credentials`: The grant type used for this request.
-    - `scope=apis`: Defines the scope for the token.
-
-   This command will return a JSON response containing the access token if the credentials are valid.
-
-#### Example Output
-
-If the request is successful, the response will contain an access token in the JSON format:
-
-```json
-{
-  "access_token": "<jwt-token>",
-  "token_type": "Bearer",
-  "expires_in": 299,
-  "scope": "apis"
-}
-```
-
-#### Request the Protected Resource Using a JWT Token
-
-After obtaining the JWT token, you can use it to access a protected resource, such as an API endpoint. To do this, send
-an HTTP `GET` request to the desired endpoint, passing the token as a Bearer token in the `Authorization` header.
-
-#### Example `curl` Command:
+During development, you can generate the REST API documentation locally by running the following command:
 
 ```bash
-curl -v http://localhost:8080/api/v1/principal -H "Authorization: Bearer <your-jwt-token>"
+    ./gradlew clean asciidoctor
 ```
 
+Once the build completes, the generated documentation will be available in the **build/docs** directory.
+
+To view the documentation:
+
+1. Navigate to the `build/docs` directory.
+2. Open the `index.html` file in your browser.
+
+This will present an interactive documentation page where you can find detailed information on how to make requests to
+test the app's APIs.
 ---
 
 ## License
