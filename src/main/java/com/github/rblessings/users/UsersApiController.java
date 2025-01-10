@@ -22,17 +22,13 @@ public class UsersApiController {
     public ResponseEntity<ApiResponse<UserDTO>> createUser(@Valid @RequestBody UserRegistrationRequest re) {
         UserDTO createdUser = userService.registerUser(re.firstName(), re.lastName(), re.email(), re.password());
 
-        // Build the URI for the newly created user resource using ServletUriComponentsBuilder
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(createdUser.id())
                 .toUri();
 
-        // Create a response object using the generic ApiResponse
         ApiResponse<UserDTO> response = ApiResponse.success(HttpStatus.CREATED.value(), createdUser);
-
-        // Response with Location header and body
         return ResponseEntity.created(location).body(response);
     }
 
@@ -48,7 +44,7 @@ public class UsersApiController {
     }
 
     @GetMapping("/principal")
-    public ResponseEntity<Authentication> getPrincipal(Authentication authentication) {
-        return ResponseEntity.ok(authentication);
+    public ResponseEntity<ApiResponse<Authentication>> getPrincipal(Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), authentication));
     }
 }
