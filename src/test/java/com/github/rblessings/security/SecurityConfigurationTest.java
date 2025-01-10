@@ -1,5 +1,6 @@
 package com.github.rblessings.security;
 
+import com.github.rblessings.users.ApiResponse;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
@@ -75,12 +77,12 @@ class SecurityConfigurationTest {
 
     @Test
     void shouldGenerateJwtTokenForValidClientCredentials() {
-        String encodedCredentials = encodeClientCredentials(CLIENT_ID, CLIENT_SECRET);
+        String encodedCredentials = encodeClientCredentialsToBase64(CLIENT_ID, CLIENT_SECRET);
 
         webTestClient.post()
                 .uri(TOKEN_ENDPOINT)
                 .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
-                .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedCredentials)
+                .header(HttpHeaders.AUTHORIZATION, "Basic %s".formatted(encodedCredentials))
                 .bodyValue("grant_type=client_credentials&scope=apis:read apis:write")
                 .exchange()
                 .expectStatus().isOk()
@@ -89,26 +91,23 @@ class SecurityConfigurationTest {
                     String responseBody = getResponseBodyContent(response);
                     assertTokenResponse(responseBody);
                 })
-
                 .consumeWith(document("users-generate-oauth2-jwt-token", new CustomOAuth2CurlSnippet()));
     }
 
     @Test
     void shouldReturnUnauthorizedForInvalidClientCredentials() {
-        // Given: Invalid client credentials
         String invalidClientId = "invalidClient";
         String invalidClientSecret = "invalidSecret";
 
-        // When: Requesting the token with invalid credentials
         webTestClient.post()
                 .uri(TOKEN_ENDPOINT)
                 .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
-                .bodyValue("grant_type=client_credentials&client_id=" + invalidClientId + "&client_secret=" + invalidClientSecret)
+                .bodyValue("grant_type=client_credentials&client_id=%s&client_secret=%s"
+                        .formatted(invalidClientId, invalidClientSecret))
                 .exchange()
                 .expectStatus().isUnauthorized()
                 .expectBody()
                 .consumeWith(response -> {
-                    // Then: should not be able to retrieve a token
                     String responseBody = getResponseBodyContent(response);
                     assertThat(responseBody).contains("invalid_client");
                 });
@@ -116,33 +115,29 @@ class SecurityConfigurationTest {
 
     @Test
     void shouldReturnHelloMessageForValidToken() {
-        // Given: Get a valid access token using OAuth2 client credentials
         String token = getValidAccessToken();
 
-        // When: Request the /api/v1/hello endpoint with the valid Bearer token
         webTestClient.get()
                 .uri(HELLO_ENDPOINT)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer %s".formatted(token))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(String.class)
                 .value(response -> {
-                    // Then: Assert the response body contains the expected message
-                    assertThat(response).contains("{\"message\":\"Hello, world!\"}");
+                    assertThat(response).isEqualTo(
+                            "{\"statusCode\":200,\"message\":null,\"data\":{\"message\":\"Hello, world!\"}}");
                 });
     }
 
     @Test
     void shouldReturnUnauthorizedForInvalidToken() {
-        // Given: Use an invalid token (a random or malformed token)
-        String invalidToken = "invalid_token";  // This token is intentionally invalid
+        String invalidToken = "invalid_token";
 
-        // When: Request the /api/v1/hello endpoint with the invalid Bearer token
         webTestClient.get()
                 .uri(HELLO_ENDPOINT)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + invalidToken)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer %s".formatted(invalidToken))
                 .exchange()
-                .expectStatus().isUnauthorized()  // Expect HTTP 401 Unauthorized
+                .expectStatus().isUnauthorized()
                 .expectHeader()
                 .value("WWW-Authenticate", message ->
                         assertThat(message).contains("Bearer error=\"invalid_token\"")
@@ -151,24 +146,17 @@ class SecurityConfigurationTest {
 
     @Test
     void shouldReturnPrincipalForValidToken() {
-        // Given: Get a valid access token using OAuth2 client credentials
         String token = getValidAccessToken();
 
-        // When: Request the /api/v1/principal endpoint with the valid Bearer token
         webTestClient.get()
                 .uri(PRINCIPAL_ENDPOINT)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer %s".formatted(token))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(String.class)
                 .value(response -> {
-                    // Check if the "authenticated" status is true
                     assertThat(response).contains("\"authenticated\":true");
-
-                    // Assert the principal's name is as expected
                     assertThat(response).contains("\"name\":\"curl-client\"");
-
-                    // Assert specific values in the authorities
                     assertThat(response).contains(
                             "\"authorities\":[{\"authority\":\"SCOPE_apis:read\"},{\"authority\":\"SCOPE_apis:write\"}]");
                 })
@@ -182,13 +170,11 @@ class SecurityConfigurationTest {
         );
     }
 
-    // Utility method to encode client credentials for Basic Authentication
-    private static String encodeClientCredentials(String clientId, String clientSecret) {
+    private static String encodeClientCredentialsToBase64(String clientId, String clientSecret) {
         String credentials = "%s:%s".formatted(clientId, clientSecret);
         return Base64.getEncoder().encodeToString(credentials.getBytes());
     }
 
-    // Utility method to assert the structure of the JWT token response
     private void assertTokenResponse(String responseBody) {
         // Use JsonPath to extract values
         String accessToken = JsonPath.read(responseBody, "$.access_token");
@@ -206,13 +192,13 @@ class SecurityConfigurationTest {
 
     // Helper method to get a valid access token using the OAuth2 client credentials flow
     private String getValidAccessToken() {
-        String encodedCredentials = encodeClientCredentials(CLIENT_ID, CLIENT_SECRET);
+        String encodedCredentials = encodeClientCredentialsToBase64(CLIENT_ID, CLIENT_SECRET);
         AtomicReference<String> accessToken = new AtomicReference<>();
 
         webTestClient.post()
                 .uri(TOKEN_ENDPOINT)
                 .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
-                .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedCredentials)
+                .header(HttpHeaders.AUTHORIZATION, "Basic %s".formatted(encodedCredentials))
                 .bodyValue("grant_type=client_credentials&scope=apis:read apis:write")
                 .exchange()
                 .expectStatus().isOk()
@@ -231,6 +217,10 @@ class SecurityConfigurationTest {
         return accessToken.get();
     }
 
+    record Greetings(String message) {
+
+    }
+
     /**
      * A test controller used to verify the OAuth 2 Resource Server configuration.
      * This controller exposes a simple endpoint that can be accessed by clients
@@ -238,11 +228,11 @@ class SecurityConfigurationTest {
      */
     @RestController
     @RequestMapping(value = "/api/v1/hello")
-    static class TestApiController {
+    protected static class TestApiController {
 
         @GetMapping
-        ResponseEntity<String> hello() {
-            return ResponseEntity.ok("{\"message\":\"Hello, world!\"}");
+        ResponseEntity<ApiResponse<Greetings>> hello() {
+            return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), new Greetings("Hello, world!")));
         }
     }
 
@@ -260,7 +250,7 @@ class SecurityConfigurationTest {
      * Add this snippet to your Spring REST Docs documentation to provide developers
      * with clear, concise instructions for generating OAuth2 tokens via `curl`.
      */
-    static class CustomOAuth2CurlSnippet extends TemplatedSnippet {
+    private static class CustomOAuth2CurlSnippet extends TemplatedSnippet {
 
         // Constructor: Initializes the snippet with the template name and no additional attributes.
         CustomOAuth2CurlSnippet() {
