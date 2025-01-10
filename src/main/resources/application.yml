@@ -1,5 +1,4 @@
 spring:
-
   application:
     name: urlradar
 
@@ -20,6 +19,7 @@ management:
         include:
           - health
           - prometheus
+          - info
   endpoint:
     health:
       show-details: always

@@ -13,14 +13,10 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
@@ -29,11 +25,8 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
-import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
@@ -42,8 +35,9 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
-import java.util.List;
 import java.util.UUID;
+
+import static org.springframework.security.oauth2.core.authorization.OAuth2AuthorizationManagers.hasScope;
 
 /**
  * Security Configuration for OAuth2 Authorization Server with JWT.
@@ -89,11 +83,6 @@ import java.util.UUID;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
-    private final JwtAuthenticationConverter jwtAuthenticationConverter;
-
-    public SecurityConfiguration(JwtAuthenticationConverter jwtAuthenticationConverter) {
-        this.jwtAuthenticationConverter = jwtAuthenticationConverter;
-    }
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -115,44 +104,36 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/api/v1/**").access(hasScope("apis:read"))
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer((oauth2) -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)))
+                        .jwt(Customizer.withDefaults()))
                 .exceptionHandling((exceptions) -> exceptions
                         .defaultAuthenticationEntryPointFor(
                                 new BearerTokenAuthenticationEntryPoint(),
-                                new MediaTypeRequestMatcher(MediaType.APPLICATION_JSON, MediaType.APPLICATION_FORM_URLENCODED)
+                                new MediaTypeRequestMatcher(MediaType.ALL)
                         )
                         .accessDeniedHandler(new BearerTokenAccessDeniedHandler()));
         return http.build();
     }
 
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
-        UserDetails userDetails = User.withDefaultPasswordEncoder()
-                .username("blessingsihembi@gmail.com")
-                .password("secret")
-                .roles("USER")
-                .build();
-        return new InMemoryUserDetailsManager(userDetails);
-    }
-
-    @Bean
     public RegisteredClientRepository registeredClientRepository() {
-        RegisteredClient oidcClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                .clientId("client")
+        RegisteredClient curlClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId("curl-client")
                 .clientSecret("{noop}secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                .scope("apis")
+                .scope("apis:read")
+                .scope("apis:write")
                 .tokenSettings(TokenSettings.builder().accessTokenTimeToLive(Duration.ofMinutes(10)).build())
                 .build();
-        return new InMemoryRegisteredClientRepository(oidcClient);
+        return new InMemoryRegisteredClientRepository(curlClient);
     }
 
     @Bean
@@ -193,15 +174,5 @@ public class SecurityConfiguration {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
-    }
-
-    @Bean
-    public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer() {
-        return context -> {
-            JwtClaimsSet.Builder claims = context.getClaims();
-            // TODO: Implement logic for dynamically determining permissions
-            //       based on user roles or other attributes, if applicable.
-            claims.claim("permissions", List.of("read_apis", "write_apis"));
-        };
     }
 }
