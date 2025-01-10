@@ -89,6 +89,10 @@ urlradar simplifies link management for job seekers, entrepreneurs, and anyone w
     - This application is designed for deployment within a **Kubernetes cluster**, enabling seamless scalability, high
       availability, and fault tolerance. Containerized using **Docker** for efficient packaging and portability.
 
+**Note:** The resource and authorization servers are currently integrated in one project for streamlined development and
+deployment. They will be separated in the future for improved scalability and maintainability. For more details,
+see [issue #17](https://github.com/rblessings/urlradar/issues/17).
+
 ---
 
 ## Installation
