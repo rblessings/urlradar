@@ -1,0 +1,4 @@
+curl '{{url}}' -i -X {{method}} \
+{{#headers}}    -H '{{name}}: {{value}}' \
+{{/headers}}{{#authorizationHeader}}    -H 'Authorization: Basic {{authorizationHeader}}' \
+{{/authorizationHeader}}{{#requestBody}}    -d '{{requestBody}}'{{/requestBody}}

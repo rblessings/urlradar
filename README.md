@@ -163,7 +163,7 @@ Once the build completes, the generated documentation will be available in the *
 
 To view the documentation:
 
-1. Navigate to the `build/docs` directory.
+1. Navigate to the `build/docs/asciidoc` directory.
 2. Open the `index.html` file in your browser.
 
 This will present an interactive documentation page where you can find detailed information on how to make requests to

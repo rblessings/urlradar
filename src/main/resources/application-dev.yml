@@ -1,10 +1,9 @@
 logging:
   level:
     org.springframework.web: DEBUG
-    org.springframework.security: DEBUG
+    org.springframework.security: TRACE
 
 spring:
-
   data:
     mongodb:
       uri: "mongodb://root:secret@mongodb-svc:27017/urlradar?authSource=admin"

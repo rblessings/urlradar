@@ -3,29 +3,53 @@
 == Authentication
 === Generate OAuth2 JWT Token
 
+First, Base64 encode your client ID and secret using the following command:
+
+[source,sh]
+----
+echo -n "curl-client:secret" | base64
+----
+
 ==== Request
-include::{snippetsDir}/users-generate-oauth2-jwt-token/curl-request.adoc[]
+To generate an OAuth2 JWT token, use the following CURL command:
+
+[source,adoc]
+----
+include::{snippetsDir}/users-generate-oauth2-jwt-token/custom-oauth2-curl.adoc[]
+----
 
 ==== Response
+A successful response will return a JSON object with your access token, scope, token type, and expiration time.
 include::{snippetsDir}/users-generate-oauth2-jwt-token/response-body.adoc[]
 
 == Users
+
 === Retrieve Authenticated User Details
 
+==== Request
+To retrieve details about the authenticated user, use the following CURL command:
 include::{snippetsDir}/users-get-current-principal/curl-request.adoc[]
+
+==== Response
+A successful response will return a JSON object with the user's details.
+include::{snippetsDir}/users-get-current-principal/response-body.adoc[]
 
 === Create User
 
 ==== Request
+To create a new user, use the following CURL command:
 include::{snippetsDir}/users-create-account/curl-request.adoc[]
 
 ==== Response
+A successful response will return a JSON object with the created user's details.
 include::{snippetsDir}/users-create-account/response-body.adoc[]
 
 === Get User by ID
 
 ==== Request
+To retrieve details of a user by their ID, use the following CURL command:
 include::{snippetsDir}/users-get-user-by-id/curl-request.adoc[]
 
 ==== Response
+A successful response will return a JSON object with the user's details.
 include::{snippetsDir}/users-get-user-by-id/response-body.adoc[]
