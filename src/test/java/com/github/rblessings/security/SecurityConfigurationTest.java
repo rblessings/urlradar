@@ -1,21 +1,26 @@
 package com.github.rblessings.security;
 
-import com.github.rblessings.TestcontainersConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpHeaders;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.util.Base64;
 import java.util.Objects;
@@ -29,30 +34,46 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @ActiveProfiles({"dev"})
 @ExtendWith({SpringExtension.class, RestDocumentationExtension.class})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(TestcontainersConfiguration.class)
+@Testcontainers
 class SecurityConfigurationTest {
 
-    private static final String AUTH_SERVER_BASE_URL = "http://localhost:9000";
     private static final String TOKEN_ENDPOINT = "/oauth2/token";
     private static final String PRINCIPAL_ENDPOINT = "/api/v1/users/principal";
     private static final String CLIENT_ID = "curl-client";
     private static final String CLIENT_SECRET = "secret";
 
+    @Container
+    static GenericContainer<?> AUTHORIZATION_SERVER_CONTAINER = new GenericContainer<>(
+            "rblessings/oauth2-oidc-jwt-auth-server:latest")
+            .withEnv("spring.profiles.active", "dev")
+            .withExposedPorts(9000)
+
+            // Check that the server is up and ready by confirming a healthy status
+            .waitingFor(Wait.forListeningPort())
+            .waitingFor(Wait.forHttp("/").forStatusCode(404)); // TODO check /actuator/health for 200-OK status
+
+    @Container
+    @ServiceConnection
+    static GenericContainer<?> REDIS_CONTAINER = new GenericContainer<>(DockerImageName.parse("redis:latest"))
+            .withExposedPorts(6379)
+            .waitingFor(Wait.forListeningPort());
+
+    @DynamicPropertySource
+    static void dynamicPropertySource(DynamicPropertyRegistry registry) {
+        registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri",
+                () -> "http://localhost:%d".formatted(AUTHORIZATION_SERVER_CONTAINER.getMappedPort(9000)));
+
+    }
+
     private WebTestClient webTestClient;
-    private final Integer authorizationServerContainerPort;
 
     @LocalServerPort
-    private int port;
-
-    @Autowired
-    SecurityConfigurationTest(Integer authorizationServerContainerPort) {
-        this.authorizationServerContainerPort = authorizationServerContainerPort;
-    }
+    private int localServerPort;
 
     @BeforeEach
     void setUp(RestDocumentationContextProvider restDocumentation) {
         this.webTestClient = WebTestClient.bindToServer()
-                .baseUrl("http://localhost:%d".formatted(port))
+                .baseUrl("http://localhost:%d".formatted(localServerPort))
                 .filter(documentationConfiguration(restDocumentation)
                         .operationPreprocessors()
                         .withRequestDefaults(
@@ -72,7 +93,6 @@ class SecurityConfigurationTest {
                 .build();
     }
 
-    // Test the OAuth2 Resource Server configuration to ensure the protected resource can be accessed with a valid JWT token
     @Test
     void shouldReturnPrincipalForValidToken() {
         final String token = getValidAccessToken();
@@ -98,7 +118,7 @@ class SecurityConfigurationTest {
         AtomicReference<String> accessToken = new AtomicReference<>();
 
         WebTestClient authorizationServerWebTestClient = WebTestClient.bindToServer()
-                .baseUrl("http://localhost:%d".formatted(authorizationServerContainerPort)) // Dynamic port for the authorization server
+                .baseUrl("http://localhost:%d".formatted(AUTHORIZATION_SERVER_CONTAINER.getMappedPort(9000))) // Dynamic port for the authorization server
                 .build();
 
         authorizationServerWebTestClient.post()
