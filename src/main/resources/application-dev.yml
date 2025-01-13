@@ -1,15 +1,4 @@
-logging:
-  level:
-    org.springframework.web: DEBUG
-    org.springframework.security: TRACE
-
 spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:9000
-
   data:
     mongodb:
       uri: "mongodb://root:secret@mongodb-svc:27017/urlradar?authSource=admin"
@@ -19,3 +8,7 @@ spring:
 
   kafka:
     bootstrap-servers: http://localhost:9092
+
+rblessings:
+  auth-server:
+    base-url: http://localhost:9000
