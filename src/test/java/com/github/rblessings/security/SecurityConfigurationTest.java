@@ -48,7 +48,7 @@ class SecurityConfigurationTest {
             .withEnv("spring.profiles.active", "dev")
             .withExposedPorts(9000)
 
-            // Check that the server is up and ready by confirming a healthy status
+            // Check that the server is up and ready to receive requests
             .waitingFor(Wait.forListeningPort())
             .waitingFor(Wait.forHttp("/").forStatusCode(404)); // TODO check /actuator/health for 200-OK status
 
