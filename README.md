@@ -113,24 +113,20 @@ To run the project locally using Docker:
     cd urlradar
     ```
 
-2. Run the **unit and integration tests** by executing the following command:
-    ```bash
-   ./gradlew clean build
-   ```
-
-3. Build and run the Docker containers:
+2. Build and run the Docker containers:
     ```bash
     docker compose up --build -d
     ```
 
-   This will start the following services:
-    - **MongoDB**: Stores user data and redirection records.
-    - **Redis**: Caching layer for efficient URL lookups.
-    - **Kafka**: handles event streaming for distributed communication, enabling real-time analytics on user data and
-      URL performance with low-latency, high-throughput processing.
+This will start the following services:
 
+- **MongoDB**: Stores user data and redirection records.
+- **Redis**: Caching layer for efficient URL lookups.
+- **Kafka**: handles event streaming for distributed communication, enabling real-time analytics on user data and
+  URL performance with low-latency, high-throughput processing.
+- **Authorization server**: OAuth2 OIDC JWT Authentication Server.
 
-4. To start the **Backend (API)** Core URL redirection and analytics service:
+3. To start the **Backend (API)** Core URL redirection and analytics service:
     ```bash
    SPRING_PROFILES_ACTIVE=dev ./gradlew clean bootRun
    ```
@@ -156,7 +152,7 @@ for our REST APIs. This approach offers several key advantages:
 During development, you can generate the REST API documentation locally by running the following command:
 
 ```bash
-    ./gradlew clean asciidoctor
+./gradlew clean test asciidoctor
 ```
 
 Once the build completes, the generated documentation will be available in the **build/docs** directory.

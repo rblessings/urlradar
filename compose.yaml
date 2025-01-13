@@ -42,12 +42,19 @@ services:
 
       # Log directory and cluster ID
       KAFKA_LOG_DIRS: "/var/lib/kafka/data"
-      KAFKA_CLUSTER_ID: "urlradar-27-12-2024"
+      KAFKA_CLUSTER_ID: "test-kafka-cluster-id-1"
 
     volumes:
       - kafka_data:/var/lib/kafka/data
     networks:
       - kafka_network
+
+  oauth2-oidc-jwt-auth-server:
+    image: rblessings/oauth2-oidc-jwt-auth-server:latest
+    ports:
+      - "9000:9000"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
 
 volumes:
   kafka_data:
