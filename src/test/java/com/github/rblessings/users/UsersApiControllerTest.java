@@ -85,11 +85,11 @@ public class UsersApiControllerTest {
 
     @Test
     public void testGetUserById_Success() throws Exception {
-        // Arrange: Mock the service to return the UserDTO
+        // Arrange
         given(userService.findById("1")).willReturn(Optional.of(mockUserDTO));
 
 
-        // Act & Assert: Perform the GET request and validate the response using MockMvc
+        // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/users/{id}", "1")
                         // This header is included for Spring REST Docs documentation purposes. It is not required for the test itself.
                         .header("Authorization", "Bearer <your-jwt-token>"))
