@@ -4,6 +4,12 @@ logging:
     org.springframework.security: TRACE
 
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9000
+
   data:
     mongodb:
       uri: "mongodb://root:secret@mongodb-svc:27017/urlradar?authSource=admin"
@@ -12,4 +18,4 @@ spring:
       host: localhost
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: http://localhost:9092

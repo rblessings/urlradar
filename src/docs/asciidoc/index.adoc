@@ -3,24 +3,7 @@
 == Authentication
 === Generate OAuth2 JWT Token
 
-First, Base64 encode your client ID and secret using the following command:
-
-[source,sh]
-----
-echo -n "curl-client:secret" | base64
-----
-
-==== Request
-To generate an OAuth2 JWT token, use the following CURL command:
-
-[source,adoc]
-----
-include::{snippetsDir}/users-generate-oauth2-jwt-token/custom-oauth2-curl.adoc[]
-----
-
-==== Response
-A successful response will return a JSON object with your access token, scope, token type, and expiration time.
-include::{snippetsDir}/users-generate-oauth2-jwt-token/response-body.adoc[]
+Please refer to the link: https://github.com/rblessings/oauth2-oidc-jwt-auth-server[OAuth2 OIDC JWT Auth Server documentation] to see how tokens are generated.
 
 == Users
 

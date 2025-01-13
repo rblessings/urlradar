@@ -2,6 +2,12 @@ spring:
   application:
     name: urlradar
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: # This should be overridden based on the specific environment configuration.
+
   data:
     mongodb:
       uri: # This should be overridden based on the specific environment configuration.
