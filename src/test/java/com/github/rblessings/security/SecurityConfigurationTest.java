@@ -16,6 +16,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
@@ -41,28 +42,28 @@ class SecurityConfigurationTest {
     private static final String PRINCIPAL_ENDPOINT = "/api/v1/users/principal";
     private static final String CLIENT_ID = "curl-client";
     private static final String CLIENT_SECRET = "secret";
+    private static final int AUTH_SERVER_PORT = 9090;
 
     @Container
-    static GenericContainer<?> AUTHORIZATION_SERVER_CONTAINER = new GenericContainer<>(
-            "rblessings/oauth2-oidc-jwt-auth-server:latest")
-            .withEnv("spring.profiles.active", "dev")
-            .withExposedPorts(9000)
-
-            // Check that the server is up and ready to receive requests
-            .waitingFor(Wait.forListeningPort())
-            .waitingFor(Wait.forHttp("/").forStatusCode(404)); // TODO check /actuator/health for 200-OK status
+    static final FixedHostPortGenericContainer<?> AUTHORIZATION_SERVER_CONTAINER =
+            new FixedHostPortGenericContainer<>("rblessings/oauth2-oidc-jwt-auth-server:latest")
+                    .withFixedExposedPort(AUTH_SERVER_PORT, 9000)
+                    .withEnv("SPRING_PROFILES_ACTIVE", "dev")
+                    .withEnv("SPRING_SECURITY_OAUTH2_AUTHORIZATIONSERVER_ISSUER",
+                            String.format("http://localhost:%d", AUTH_SERVER_PORT))
+                    .waitingFor(Wait.forListeningPort())
+                    .waitingFor(Wait.forHttp("/.well-known/openid-configuration").forStatusCode(200));
 
     @Container
     @ServiceConnection
-    static GenericContainer<?> REDIS_CONTAINER = new GenericContainer<>(DockerImageName.parse("redis:latest"))
+    static final GenericContainer<?> REDIS_CONTAINER = new GenericContainer<>(DockerImageName.parse("redis:latest"))
             .withExposedPorts(6379)
             .waitingFor(Wait.forListeningPort());
 
     @DynamicPropertySource
     static void dynamicPropertySource(DynamicPropertyRegistry registry) {
         registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri",
-                () -> "http://localhost:%d".formatted(AUTHORIZATION_SERVER_CONTAINER.getMappedPort(9000)));
-
+                () -> String.format("http://localhost:%d", AUTH_SERVER_PORT));
     }
 
     private WebTestClient webTestClient;
@@ -73,20 +74,18 @@ class SecurityConfigurationTest {
     @BeforeEach
     void setUp(RestDocumentationContextProvider restDocumentation) {
         this.webTestClient = WebTestClient.bindToServer()
-                .baseUrl("http://localhost:%d".formatted(localServerPort))
+                .baseUrl(String.format("http://localhost:%d", localServerPort))
                 .filter(documentationConfiguration(restDocumentation)
                         .operationPreprocessors()
                         .withRequestDefaults(
                                 modifyHeaders()
-                                        // Removing non-essential headers to streamline the request for documentation purposes
                                         .remove("accept-encoding")
                                         .remove("user-agent")
                                         .remove("accept"),
                                 modifyUris()
-                                        // Ensuring consistent and fixed base URI for documentation, overriding dynamic test ports
                                         .scheme("http")
                                         .host("localhost")
-                                        .port(8080)  // Explicitly setting the port to 8080 for documentation clarity
+                                        .port(8080)
                         )
                         .withResponseDefaults(prettyPrint())
                 )
@@ -99,7 +98,7 @@ class SecurityConfigurationTest {
 
         webTestClient.get()
                 .uri(PRINCIPAL_ENDPOINT)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer %s".formatted(token))
+                .header(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", token))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(String.class)
@@ -112,19 +111,18 @@ class SecurityConfigurationTest {
                 .consumeWith(document("users-get-current-principal"));
     }
 
-    // Helper method to get a valid access token using the OAuth2 client credentials flow from the Authorization Server
     private String getValidAccessToken() {
         String encodedCredentials = encodeClientCredentialsToBase64(CLIENT_ID, CLIENT_SECRET);
         AtomicReference<String> accessToken = new AtomicReference<>();
 
         WebTestClient authorizationServerWebTestClient = WebTestClient.bindToServer()
-                .baseUrl("http://localhost:%d".formatted(AUTHORIZATION_SERVER_CONTAINER.getMappedPort(9000))) // Dynamic port for the authorization server
+                .baseUrl(String.format("http://localhost:%d", AUTH_SERVER_PORT))
                 .build();
 
         authorizationServerWebTestClient.post()
                 .uri(TOKEN_ENDPOINT)
                 .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
-                .header(HttpHeaders.AUTHORIZATION, "Basic %s".formatted(encodedCredentials))
+                .header(HttpHeaders.AUTHORIZATION, String.format("Basic %s", encodedCredentials))
                 .bodyValue("grant_type=client_credentials&scope=apis:read apis:write")
                 .exchange()
                 .expectStatus().isOk()
@@ -143,7 +141,6 @@ class SecurityConfigurationTest {
     }
 
     private static String encodeClientCredentialsToBase64(String clientId, String clientSecret) {
-        String credentials = "%s:%s".formatted(clientId, clientSecret);
-        return Base64.getEncoder().encodeToString(credentials.getBytes());
+        return Base64.getEncoder().encodeToString(String.format("%s:%s", clientId, clientSecret).getBytes());
     }
 }
