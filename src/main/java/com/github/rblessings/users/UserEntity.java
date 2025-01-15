@@ -24,7 +24,7 @@ import java.util.Objects;
  * @param password  The user’s password (securely handled externally).
  */
 @Document(collection = "users")
-public record User(
+public record UserEntity(
         @Id String id,
         String firstName,
         String lastName,
@@ -40,7 +40,7 @@ public record User(
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
-        User user = (User) o;
+        UserEntity user = (UserEntity) o;
         return Objects.equals(email, user.email);
     }
 

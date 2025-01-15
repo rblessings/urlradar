@@ -5,13 +5,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(SpringExtension.class)
 public class UserServiceTest {
 
     @InjectMocks
@@ -23,26 +24,26 @@ public class UserServiceTest {
     @Mock
     private BCryptPasswordEncoder passwordEncoder;
 
-    private User user;
+    private UserEntity user;
 
     @BeforeEach
     public void setUp() {
-        // Prepare test data
-        user = new User("1", "John", "Doe", "john.doe@example.com", "encodedPassword");
+        user = new UserEntity("1", "John", "Doe", "john.doe@example.com", "encodedPassword");
     }
 
     @Test
     public void testRegisterUser_EmailAlreadyInUse() {
         // Arrange
         String email = "john.doe@example.com";
-        when(userRepository.findByEmail(email)).thenReturn(java.util.Optional.of(user));
+        when(userRepository.findByEmail(email)).thenReturn(Mono.just(user));
 
         // Act & Assert
-        EmailAlreadyInUseException exception = assertThrows(EmailAlreadyInUseException.class, () -> {
-            userService.registerUser("John", "Doe", email, "password123");
-        });
+        Mono<UserDTO> result = userService.registerUser("John", "Doe", email, "password123");
 
-        assertEquals("The email address 'john.doe@example.com' is already in use.", exception.getMessage());
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable -> throwable instanceof EmailAlreadyInUseException
+                        && throwable.getMessage().equals("The email address 'john.doe@example.com' is already in use."))
+                .verify();
 
         verify(userRepository).findByEmail(email);
     }
@@ -51,18 +52,20 @@ public class UserServiceTest {
     public void testRegisterUser_Success() {
         // Arrange
         String email = "john.doe@example.com";
-        when(userRepository.findByEmail(email)).thenReturn(java.util.Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Mono.empty());
         when(passwordEncoder.encode("password123")).thenReturn("encodedPassword");
-        when(userRepository.save(any(User.class))).thenReturn(user);
+        when(userRepository.save(any(UserEntity.class))).thenReturn(Mono.just(user));
 
         // Act
-        UserDTO result = userService.registerUser("John", "Doe", email, "password123");
+        Mono<UserDTO> result = userService.registerUser("John", "Doe", email, "password123");
 
         // Assert
-        assertNotNull(result);
-        assertEquals("john.doe@example.com", result.email());
+        StepVerifier.create(result)
+                .expectNextMatches(userDTO -> userDTO.email().equals("john.doe@example.com"))
+                .expectComplete()
+                .verify();
 
         verify(userRepository).findByEmail(email);
-        verify(userRepository).save(any(User.class));
+        verify(userRepository).save(any(UserEntity.class));
     }
 }

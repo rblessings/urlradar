@@ -1,9 +1,8 @@
 package com.github.rblessings.users;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
-
-public interface UserRepository extends MongoRepository<User, String> {
-    Optional<User> findByEmail(String email);
+public interface UserRepository extends ReactiveMongoRepository<UserEntity, String> {
+    Mono<UserEntity> findByEmail(String email);
 }

@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import reactor.core.publisher.Mono;
 
 /**
  * Global exception handler for all user-related exceptions thrown by REST controllers.
@@ -18,24 +19,26 @@ public class UserExceptionHandler {
      * Handles the {@link EmailAlreadyInUseException} exception and returns a standardized response.
      *
      * @param ex The exception that was thrown.
-     * @return A standardized API response with the error message.
+     * @return A standardized API response with the error message wrapped in a Mono.
      */
     @ExceptionHandler(EmailAlreadyInUseException.class)
-    public ResponseEntity<ApiResponse<String>> handleEmailAlreadyInUse(EmailAlreadyInUseException ex) {
-        ApiResponse<String> response = ApiResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    public Mono<ResponseEntity<ApiResponse<String>>> handleEmailAlreadyInUse(EmailAlreadyInUseException ex) {
+        final var httpStatus = HttpStatus.BAD_REQUEST;
+        ApiResponse<String> response = ApiResponse.error(httpStatus.value(), ex.getMessage());
+        return Mono.just(new ResponseEntity<>(response, httpStatus));
     }
 
     /**
      * Handles all other exceptions and returns a generic error response.
      *
      * @param ex The exception that was thrown.
-     * @return A standardized API response with a generic error message.
+     * @return A standardized API response with a generic error message wrapped in a Mono.
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<String>> handleException(Exception ex) {
-        ApiResponse<String> response = ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    public Mono<ResponseEntity<ApiResponse<String>>> handleException(Exception ex) {
+        final var httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+        ApiResponse<String> response = ApiResponse.error(httpStatus.value(), ex.getMessage());
+        return Mono.just(new ResponseEntity<>(response, httpStatus));
     }
 }
 

@@ -2,9 +2,7 @@ package com.github.rblessings.users;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
+import reactor.core.publisher.Mono;
 
 @Service
 public class UserService {
@@ -19,55 +17,52 @@ public class UserService {
     /**
      * Registers a new user.
      * <p>
-     * Checks if the provided email is already in use. If so, throws an {@link EmailAlreadyInUseException}.
-     * Otherwise, the user's details are saved after encoding the password, and a {@link UserDTO} is returned.
+     * Checks if the provided email is already in use. If so, emits an error signal with {@link EmailAlreadyInUseException}.
+     * Otherwise, the user's details are saved after encoding the password, and a {@link UserDTO} is emitted.
      * </p>
      *
      * @param firstName The user's first name.
      * @param lastName  The user's last name.
      * @param email     The user's email address. Must be unique.
      * @param password  The user's raw password, which will be encoded before saving.
-     * @return A {@link UserDTO} representing the registered user.
-     * @throws EmailAlreadyInUseException if the email is already registered.
+     * @return A {@link Mono} emitting the {@link UserDTO} representing the registered user.
      */
-    @Transactional
-    public UserDTO registerUser(String firstName, String lastName, String email, String password) {
-        userRepository.findByEmail(email)
-                .ifPresent(user -> {
-                    throw new EmailAlreadyInUseException(user.email());
-                });
-
-        String encodedPassword = passwordEncoder.encode(password);
-
-        User user = new User(null, firstName, lastName, email, encodedPassword);
-        return UserDTO.from(userRepository.save(user));
+    public Mono<UserDTO> registerUser(String firstName, String lastName, String email, String password) {
+        return userRepository.findByEmail(email)
+                .flatMap(existingUser -> Mono.<UserDTO>error(new EmailAlreadyInUseException(existingUser.email())))
+                .switchIfEmpty(Mono.defer(() -> {
+                    final String encodedPassword = passwordEncoder.encode(password);
+                    UserEntity user = new UserEntity(null, firstName, lastName, email, encodedPassword);
+                    return userRepository.save(user).map(UserDTO::from);
+                }));
     }
 
     /**
      * Retrieves a user by their email.
      * <p>
-     * Searches for a user using the provided email. If found, returns the corresponding {@link UserDTO}.
-     * If not found, returns {@link Optional#empty()}.
+     * Searches for a user using the provided email. If found, emits the corresponding {@link UserDTO}.
+     * If not found, emits an empty signal.
      * </p>
      *
      * @param email The email address of the user.
-     * @return An {@link Optional} containing the {@link UserDTO} if found, {@link Optional#empty()} otherwise.
+     * @return A {@link Mono} emitting the {@link UserDTO} if found, or an empty signal if not.
      */
-    public Optional<UserDTO> findByEmail(String email) {
+    public Mono<UserDTO> findByEmail(String email) {
         return userRepository.findByEmail(email).map(UserDTO::from);
     }
 
     /**
      * Retrieves a user by their ID.
      * <p>
-     * Searches for a user using the provided ID. If found, returns the corresponding {@link UserDTO}.
-     * If not found, returns {@link Optional#empty()}.
+     * Searches for a user using the provided ID. If found, emits the corresponding {@link UserDTO}.
+     * If not found, emits an empty signal.
      * </p>
      *
      * @param id The unique ID of the user.
-     * @return An {@link Optional} containing the {@link UserDTO} if found, {@link Optional#empty()} otherwise.
+     * @return A {@link Mono} emitting the {@link UserDTO} if found, or an empty signal if not.
      */
-    public Optional<UserDTO> findById(String id) {
+    public Mono<UserDTO> findById(String id) {
         return userRepository.findById(id).map(UserDTO::from);
     }
 }
+
