@@ -10,7 +10,7 @@ public record UserDTO(
         String password
 ) {
 
-    public static UserDTO from(final User user) {
+    public static UserDTO from(final UserEntity user) {
         Objects.requireNonNull(user);
         return new UserDTO(user.id(), user.firstName(), user.lastName(), user.email(), user.password());
     }

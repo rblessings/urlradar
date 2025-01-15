@@ -23,7 +23,7 @@ public final class ApiResponse<T> {
 
     private ApiResponse(int statusCode, String message, T data) {
         if (statusCode < 100 || statusCode > 599) {
-            throw new IllegalArgumentException("Invalid HTTP status code: " + statusCode);
+            throw new IllegalArgumentException(String.format("Invalid HTTP status code: %d", statusCode));
         }
         this.statusCode = statusCode;
         this.message = message;
