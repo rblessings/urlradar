@@ -20,7 +20,7 @@ public class UsersApiController {
     }
 
     @PostMapping
-    public Mono<ResponseEntity<ApiResponse<UserDTO>>> createUser(
+    public Mono<ResponseEntity<ApiResponse<UserDTO>>> registerNewUser(
             @Valid @RequestBody Mono<UserRegistrationRequest> requestMono) {
         return requestMono
                 .flatMap(re -> userService.registerUser(re.firstName(), re.lastName(), re.email(), re.password()))

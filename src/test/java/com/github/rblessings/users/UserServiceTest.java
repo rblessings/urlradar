@@ -5,14 +5,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.Mockito.*;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
 
     @InjectMocks
@@ -28,6 +28,7 @@ public class UserServiceTest {
 
     @BeforeEach
     public void setUp() {
+        // Initialize user entity for testing
         user = new UserEntity("1", "John", "Doe", "john.doe@example.com", "encodedPassword");
     }
 
@@ -42,14 +43,15 @@ public class UserServiceTest {
 
         StepVerifier.create(result)
                 .expectErrorMatches(throwable -> throwable instanceof EmailAlreadyInUseException
-                        && throwable.getMessage().equals("The email address 'john.doe@example.com' is already in use."))
+                        && throwable.getMessage()
+                        .equals(String.format("The email address '%s' is already in use.", email)))
                 .verify();
 
         verify(userRepository).findByEmail(email);
     }
 
     @Test
-    public void testRegisterUser_Success() {
+    public void testRegisterUser_SuccessfullyRegistersNewUser() {
         // Arrange
         String email = "john.doe@example.com";
         when(userRepository.findByEmail(email)).thenReturn(Mono.empty());
@@ -66,6 +68,6 @@ public class UserServiceTest {
                 .verify();
 
         verify(userRepository).findByEmail(email);
-        verify(userRepository).save(any(UserEntity.class));
+        verify(userRepository).save(argThat(userEntity -> userEntity.email().equals(email)));
     }
 }

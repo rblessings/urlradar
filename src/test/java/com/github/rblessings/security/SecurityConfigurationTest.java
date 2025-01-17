@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
 import org.springframework.test.context.ActiveProfiles;
@@ -23,6 +24,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,7 +40,6 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class SecurityConfigurationTest {
-
     private static final String TOKEN_ENDPOINT = "/oauth2/token";
     private static final String PRINCIPAL_ENDPOINT = "/api/v1/users/principal";
     private static final String CLIENT_ID = "curl-client";
@@ -93,25 +95,23 @@ class SecurityConfigurationTest {
     }
 
     @Test
-    void shouldReturnPrincipalForValidToken() {
-        final String token = getValidAccessToken();
+    void shouldReturnAuthenticatedPrincipalForValidToken() {
+        final String token = obtainValidClientJwtAccessToken();
 
         webTestClient.get()
                 .uri(PRINCIPAL_ENDPOINT)
                 .header(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", token))
                 .exchange()
                 .expectStatus().isOk()
-                .expectBody(String.class)
-                .value(response -> {
-                    assertThat(response).contains("\"authenticated\":true");
-                    assertThat(response).contains("\"name\":\"curl-client\"");
-                    assertThat(response).contains(
-                            "\"authorities\":[{\"authority\":\"SCOPE_apis:read\"},{\"authority\":\"SCOPE_apis:write\"}]");
-                })
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(HttpStatus.OK.value())
+                .jsonPath("$.data.authenticated").isEqualTo(true)
+                .jsonPath("$.data.principal").isNotEmpty()
+                .jsonPath("$.data.credentials.claims.scope").isEqualTo(Arrays.asList("apis:read", "apis:write"))
                 .consumeWith(document("users-get-current-principal"));
     }
 
-    private String getValidAccessToken() {
+    private String obtainValidClientJwtAccessToken() {
         String encodedCredentials = encodeClientCredentialsToBase64(CLIENT_ID, CLIENT_SECRET);
         AtomicReference<String> accessToken = new AtomicReference<>();
 
@@ -131,16 +131,27 @@ class SecurityConfigurationTest {
                     String jsonResponse = new String(Objects.requireNonNull(response.getResponseBody()));
                     try {
                         String token = new JSONObject(jsonResponse).getString("access_token");
+                        assertThat(token).isNotBlank()
+                                .withFailMessage(() -> "The client JWT token could not be obtained from the authorization server.");
+
                         accessToken.set(token);
                     } catch (JSONException e) {
-                        throw new RuntimeException("Failed to parse token from response", e);
+                        throw new RuntimeException("Failed to parse token from response: " + jsonResponse, e);
                     }
                 });
 
         return accessToken.get();
     }
 
+    /**
+     * Encodes the given client credentials (clientId and clientSecret) into a Base64 encoded string.
+     *
+     * @param clientId     The client identifier.
+     * @param clientSecret The client secret.
+     * @return A Base64 encoded string representing the client credentials.
+     */
     private static String encodeClientCredentialsToBase64(String clientId, String clientSecret) {
-        return Base64.getEncoder().encodeToString(String.format("%s:%s", clientId, clientSecret).getBytes());
+        String credentials = String.format("%s:%s", clientId, clientSecret);
+        return Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
     }
 }
