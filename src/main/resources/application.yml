@@ -1,8 +1,3 @@
-logging:
-  level:
-    org.springframework.web: DEBUG
-    org.springframework.security: TRACE
-
 spring:
   application:
     name: urlradar
@@ -11,17 +6,20 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: # This should be overridden based on the specific environment configuration.
+          issuer-uri: http://auth-server-svc.default.svc.cluster.local:8080
 
   data:
     mongodb:
-      uri: # This should be overridden based on the specific environment configuration.
+      # TODO: Secure credentials using Kubernetes Secrets, implement IRSA for AWS access,
+      # leverage AWS Secrets Manager for dynamic credential rotation, and ensure encryption at rest and in transit.
+      uri: mongodb://root:root@mongodb-svc:27017/urlradar?authSource=admin
 
     redis:
-      host: # This should be overridden based on the specific environment configuration.
+      host: redis-svc
+      port: 6379
 
   kafka:
-    bootstrap-servers: # This should be overridden based on the specific environment configuration.
+    bootstrap-servers: kafka-svc:9092
 
 management:
   endpoints:
@@ -36,3 +34,41 @@ management:
       show-details: always
     prometheus:
       enabled: true
+
+logging:
+  level:
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+
+---
+
+# TODO: Extract this configuration into application-{profile}.yml as it grows to enable environment-specific configurations
+# without cluttering the main application.yml. This approach improves maintainability,
+# reduces merge conflicts across teams, and ensures better separation of concerns between environments.
+
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9000
+
+  data:
+    mongodb:
+      uri: mongodb://root:root@mongodb-svc:27017/urlradar?authSource=admin
+
+    redis:
+      host: localhost
+      port: 6379
+
+  kafka:
+    bootstrap-servers: http://localhost:9092
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springframework.security: TRACE

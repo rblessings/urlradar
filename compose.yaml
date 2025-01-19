@@ -1,65 +1,126 @@
+# PLEASE NOTE:
+# Tested with Redis v7.4.1, MongoDB v8.0.4, and Apache Kafka v3.9.0.
+# We consistently use the latest stable releases during development to incorporate updates and security patches,
+# while also testing how new versions interact with our application.
+# Pinning specific versions ensures consistent and predictable behavior across environments.
+
 services:
 
-  # Tested with v7.4.1; however, always pull the latest version to ensure you are using the most up-to-date releases.
   redis:
     image: 'redis:latest'
     ports:
       - '6379:6379'
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - urlradar_network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "PING" ]
+      interval: 30s
+      retries: 3
+      start_period: 5s
+      timeout: 10s
 
-  # Tested with v8.0.4; however, always pull the latest version to ensure you are using the most up-to-date releases.
   mongodb:
     image: 'mongo:latest'
     environment:
-      - 'MONGO_INITDB_DATABASE=urlradar'
-      - 'MONGO_INITDB_ROOT_USERNAME=root'
-      - 'MONGO_INITDB_ROOT_PASSWORD=secret'
+      MONGO_INITDB_DATABASE: urlradar
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
     ports:
       - '27017:27017'
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - urlradar_network
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 30s
+      retries: 3
+      start_period: 5s
+      timeout: 10s
 
-  # Tested with v3.9.0; however, always pull the latest version to ensure you are using the most up-to-date releases.
   kafka:
     image: 'apache/kafka:latest'
     ports:
-      - "9092:9092"
+      - "9092:9092"  # Kafka broker listener
     environment:
-      # KRaft mode configuration
+      # KRaft mode configuration (Kafka with no Zookeeper)
       KAFKA_PROCESS_ROLES: "broker,controller"
-      KAFKA_NODE_ID: "1" # Unique node ID for this Kafka broker
-      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093" # Quorum voters for KRaft
+      KAFKA_NODE_ID: "1"  # Unique ID for the Kafka broker
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093"  # Quorum voters for KRaft controller
       KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
       KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
       KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
-
-      # Topic auto-creation settings
+      # Topic auto-creation
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-
       # Internal topics configuration
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
-
       # Log directory and cluster ID
       KAFKA_LOG_DIRS: "/var/lib/kafka/data"
       KAFKA_CLUSTER_ID: "test-kafka-cluster-id-1"
-
     volumes:
       - kafka_data:/var/lib/kafka/data
     networks:
-      - kafka_network
+      - urlradar_network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "0.0.0.0:9092", "--list" ]
+      interval: 30s
+      retries: 3
+      start_period: 5s
+      timeout: 10s
 
+  # OAuth2 OIDC JWT Authentication Server
   oauth2-oidc-jwt-auth-server:
     image: rblessings/oauth2-oidc-jwt-auth-server:latest
     ports:
       - "9000:9000"
     environment:
       SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATA_REDIS_HOST: redis-auth-server
+    networks:
+      - auth_server_network
+    restart: unless-stopped
+    depends_on:
+      - redis-auth-server
+    healthcheck:
+      test: [ "CMD", "curl", "--silent", "--fail", "http://localhost:9000/actuator/health" ]
+      interval: 30s
+      retries: 3
+      start_period: 5s
+      timeout: 10s
 
+  redis-auth-server:
+    image: 'redis:latest'
+    ports:
+      - '6380:6379'
+    networks:
+      - auth_server_network
+    restart: unless-stopped
+    volumes:
+      - redis_data_auth_server:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "PING" ]
+      interval: 30s
+      retries: 3
+      start_period: 5s
+      timeout: 10s
+
+# Volumes for persistent data storage
 volumes:
+  redis_data:
+  mongo_data:
   kafka_data:
+  redis_data_auth_server:
 
+# Networks for inter-service communication
 networks:
-  kafka_network:
-
-
+  urlradar_network:
+  auth_server_network:

@@ -77,7 +77,7 @@ tasks.named("bootJar") {
 }
 
 tasks.named('bootBuildImage') {
-    builder = 'paketobuildpacks/builder-jammy-base:latest'
+    builder = 'paketobuildpacks/builder-jammy-full:latest'
     imageName = "rblessings/urlradar"
     environment = ["BP_JVM_VERSION": "23.*"]
 }
