@@ -1,5 +1,6 @@
 package com.github.rblessings.users;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -32,23 +33,24 @@ public class UserService {
                 .flatMap(existingUser -> Mono.<UserDTO>error(new EmailAlreadyInUseException(existingUser.email())))
                 .switchIfEmpty(Mono.defer(() -> {
                     final String encodedPassword = passwordEncoder.encode(password);
-                    UserEntity user = new UserEntity(null, firstName, lastName, email, encodedPassword);
+                    UserEntity user = new UserEntity(null, firstName, lastName, email, encodedPassword, null);
                     return userRepository.save(user).map(UserDTO::from);
                 }));
     }
 
     /**
-     * Retrieves a user by their email.
+     * Retrieves a user by their email with caching.
      * <p>
      * Searches for a user using the provided email. If found, emits the corresponding {@link UserDTO}.
-     * If not found, emits an empty signal.
+     * If not found, emits an empty signal. Caching is applied to avoid repeated database queries.
      * </p>
      *
      * @param email The email address of the user.
      * @return A {@link Mono} emitting the {@link UserDTO} if found, or an empty signal if not.
      */
+    @Cacheable(value = "users", key = "#email")
     public Mono<UserDTO> findByEmail(String email) {
-        return userRepository.findByEmail(email).map(UserDTO::from);
+        return userRepository.findByEmail(email).map(UserDTO::from).switchIfEmpty(Mono.empty());
     }
 
     /**

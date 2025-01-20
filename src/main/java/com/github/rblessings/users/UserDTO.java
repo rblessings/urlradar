@@ -1,5 +1,6 @@
 package com.github.rblessings.users;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 public record UserDTO(
@@ -8,7 +9,7 @@ public record UserDTO(
         String lastName,
         String email,
         String password
-) {
+) implements Serializable {
 
     public static UserDTO from(final UserEntity user) {
         Objects.requireNonNull(user);
