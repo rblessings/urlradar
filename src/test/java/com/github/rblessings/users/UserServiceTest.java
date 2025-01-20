@@ -29,7 +29,8 @@ public class UserServiceTest {
     @BeforeEach
     public void setUp() {
         // Initialize user entity for testing
-        user = new UserEntity("1", "John", "Doe", "john.doe@example.com", "encodedPassword");
+        user = new UserEntity("1", "John", "Doe",
+                "john.doe@example.com", "encodedPassword", null);
     }
 
     @Test

@@ -59,7 +59,7 @@ spring:
 
   data:
     mongodb:
-      uri: mongodb://root:root@mongodb-svc:27017/urlradar?authSource=admin
+      uri: mongodb://root:root@localhost:27017/urlradar?authSource=admin
 
     redis:
       host: localhost
@@ -72,3 +72,4 @@ logging:
   level:
     org.springframework.web: DEBUG
     org.springframework.security: TRACE
+    org.springframework.data.mongodb: DEBUG

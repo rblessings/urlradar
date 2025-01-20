@@ -7,7 +7,6 @@ import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.restdocs.RestDocumentationContextProvider;
@@ -18,11 +17,9 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.testcontainers.containers.FixedHostPortGenericContainer;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -40,6 +37,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class SecurityConfigurationTest {
+
     private static final String TOKEN_ENDPOINT = "/oauth2/token";
     private static final String PRINCIPAL_ENDPOINT = "/api/v1/users/principal";
     private static final String CLIENT_ID = "curl-client";
@@ -55,12 +53,6 @@ class SecurityConfigurationTest {
                             String.format("http://localhost:%d", AUTH_SERVER_PORT))
                     .waitingFor(Wait.forListeningPort())
                     .waitingFor(Wait.forHttp("/.well-known/openid-configuration").forStatusCode(200));
-
-    @Container
-    @ServiceConnection
-    static final GenericContainer<?> REDIS_CONTAINER = new GenericContainer<>(DockerImageName.parse("redis:latest"))
-            .withExposedPorts(6379)
-            .waitingFor(Wait.forListeningPort());
 
     @DynamicPropertySource
     static void dynamicPropertySource(DynamicPropertyRegistry registry) {
